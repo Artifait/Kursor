@@ -1,26 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace KursorServer.Models
 {
     public class Room
     {
-        public string Id { get; init; } = null!;
-        public byte[] PasswordHash { get; set; } = null!;
-        public byte[] Salt { get; set; } = null!;
-        public DateTime Created { get; set; } = DateTime.UtcNow;
-        public DateTime LastActivity { get; set; } = DateTime.UtcNow;
-
-        // Tokens
-        public Guid TeacherToken { get; set; }
-        public Guid StudentToken { get; set; }
-
-        // Last known external UDP endpoints (learned from incoming UDP packets)
-        public IPEndPoint? TeacherEndpoint { get; set; }
-        public IPEndPoint? StudentEndpoint { get; set; }
+        public string Token { get; init; } = Guid.NewGuid().ToString("N").Substring(0, 8);
+        public string? TeacherConnectionId { get; set; }
+        public string? StudentConnectionId { get; set; }
+        public double AspectW { get; set; } = 16;
+        public double AspectH { get; set; } = 9;
+        public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+        public DateTime LastActivityUtc { get; set; } = DateTime.UtcNow;
     }
 }

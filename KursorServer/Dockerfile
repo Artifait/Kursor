@@ -1,29 +1,23 @@
-# syntax=docker/dockerfile:1
-ARG DOTNET_SDK_VERSION=8.0
-FROM mcr.microsoft.com/dotnet/sdk:${DOTNET_SDK_VERSION} AS build
+# Этап сборки
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# copy csproj(s) and restore
-COPY *.sln ./
-COPY ./Server/*.csproj ./Server/
+# Копируем csproj и восстанавливаем зависимости
+COPY *.csproj ./
 RUN dotnet restore
 
-# copy everything and publish
-COPY . .
-WORKDIR /src/Server
-RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+# Копируем остальное и собираем
+COPY . ./
+RUN dotnet publish -c Release -o /app
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-ENV ASPNETCORE_URLS=http://+:5000
-EXPOSE 5000/tcp
-EXPOSE 50000/udp
-
+# Этап рантайма
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
-COPY --from=build /app/publish .
+COPY --from=build /app .
 
-# Optional env defaults (can override at runtime)
-ENV CURSOR_UDP_PORT=50000
-ENV ROOM_TTL_MINUTES=5
-ENV ALLOWED_ORIGINS=*
+# Задаём порт
+ENV ASPNETCORE_URLS=http://+:5254
+ENV ASPNETCORE_ENVIRONMENT=Production
 
-ENTRYPOINT ["dotnet", "Server.dll"]
+EXPOSE 5254
+ENTRYPOINT ["dotnet", "KursorServer.dll"]

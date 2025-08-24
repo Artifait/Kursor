@@ -1,0 +1,22 @@
+﻿<Window x:Class="KursorClient.Windows.TeacherSetupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KursorClient.Windows"
+        mc:Ignorable="d" Background="{DynamicResource BgBrush}" Foreground="{DynamicResource AccentBrush}"
+        Title="Kursor — Teacher Setup" Width="520" Height="180"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="12">
+        <StackPanel>
+            <TextBlock FontSize="18" Text="Генерируйте комнату и скопируйте ссылку для ученика" TextWrapping="Wrap"/>
+            <TextBox x:Name="LinkBox" FontSize="16" Margin="0,8,0,8" Height="35" IsReadOnly="True"/>
+            <StackPanel Orientation="Horizontal">
+                <Button FontSize="16" Content="Создать комнату" Click="CreateRoom_Click"/>
+                <Button FontSize="16" Content="Копировать" Click="Copy_Click"/>
+                <Button FontSize="16" Content="Подключиться" Click="StartWorkWindow"/>
+                <Button FontSize="16" Content="Назад" Click="Back_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

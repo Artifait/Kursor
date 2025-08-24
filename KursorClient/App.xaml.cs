@@ -6,6 +6,6 @@ namespace KursorClient
     /// </summary>
     public partial class App : System.Windows.Application
     {
+        
     }
-
 }

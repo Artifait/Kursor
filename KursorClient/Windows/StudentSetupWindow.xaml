@@ -1,0 +1,20 @@
+﻿<Window x:Class="KursorClient.Windows.StudentSetupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KursorClient.Windows"
+        mc:Ignorable="d" Background="{DynamicResource BgBrush}" Foreground="{DynamicResource AccentBrush}"
+        Title="Kursor — Student" Width="420" Height="177"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="12">
+        <StackPanel>
+            <TextBlock FontSize="18" Text="Вставьте ссылку комнаты"/>
+            <TextBox FontSize="18" x:Name="TokenBox" Height="35" Margin="0,8,0,8"/>
+            <StackPanel Orientation="Horizontal">
+                <Button FontSize="16" Content="Подключиться" Click="Connect_Click"/>
+                <Button FontSize="16" Content="Назад" Click="Back_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>
