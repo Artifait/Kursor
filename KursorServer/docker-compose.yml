@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  cursor-server:
+    build:
+      context: .
+      dockerfile: Server/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - CURSOR_UDP_PORT=50000
+      - ROOM_TTL_MINUTES=5
+      - ALLOWED_ORIGINS=*
+    ports:
+      - "5000:5000"
+      - "50000:50000/udp"
+    restart: unless-stopped
