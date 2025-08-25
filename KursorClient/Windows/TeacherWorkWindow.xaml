@@ -8,7 +8,7 @@
         Background="{DynamicResource BgBrush}" 
         Foreground="{DynamicResource AccentBrush}"
         Title="Kursor — Teacher"
-        Width="960" Height="540"
+        Width="760" Height="440"
         Topmost="True"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"

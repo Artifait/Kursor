@@ -1,0 +1,43 @@
+name: Build and Deploy Kursor Server
+
+on:
+  push:
+    branches:
+      - master   # триггерим на пуш в main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        run: |
+          cd KursorServer
+          VERSION=$(date +%Y.%m.%d.%H%M)
+          docker build . -t artifait/kursor-server:latest -t artifait/kursor-server:$VERSION
+          docker push artifait/kursor-server:latest
+          docker push artifait/kursor-server:$VERSION
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to remote server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_SSH_HOST }}
+          username: ${{ secrets.SERVER_SSH_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            docker pull artifait/kursor-server:latest
+            docker stop kursor-server || true
+            docker rm kursor-server || true
+            docker run -d --name kursor-server --restart=always -p 5254:5254 artifait/kursor-server:latest
