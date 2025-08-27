@@ -1,15 +1,20 @@
 ﻿using KursorServer.Services;
 using Microsoft.AspNetCore.SignalR;
 using System.Threading.Tasks;
+
 namespace KursorServer.Hubs
 {
     public class KursorHub : Hub
     {
         private readonly RoomManager _rooms;
-        public KursorHub(RoomManager rooms) { _rooms = rooms; }
-        /// <summary>
-        /// Клиент присоединяется к комнате. role: "teacher" или "student".
-        /// </summary>
+        private readonly CoordsDispatcherService _dispatcher;
+
+        public KursorHub(RoomManager rooms, CoordsDispatcherService dispatcher)
+        {
+            _rooms = rooms;
+            _dispatcher = dispatcher;
+        }
+
         public async Task JoinRoom(string token, string role)
         {
             if (!_rooms.TryGetByToken(token, out var room))
@@ -17,6 +22,7 @@ namespace KursorServer.Hubs
                 await Clients.Caller.SendAsync("RoomNotFound");
                 return;
             }
+
             if (role == "teacher")
             {
                 _rooms.SetTeacher(token, Context.ConnectionId);
@@ -32,102 +38,70 @@ namespace KursorServer.Hubs
             {
                 _rooms.SetStudent(token, Context.ConnectionId);
                 await Groups.AddToGroupAsync(Context.ConnectionId, token);
-                await Clients.Caller.SendAsync("JoinedAsStudent", new
+                await Clients.Caller.SendAsync("JoinedAsStudent", new { token = token });
+
+                if (!string.IsNullOrEmpty(room.TeacherConnectionId))
                 {
-                    token = token
-                });
-                // Уведомляем учителя если он онлайн
-                
-            if (!string.IsNullOrEmpty(room.TeacherConnectionId))
-                {
-                    await
-                    Clients.Client(room.TeacherConnectionId).SendAsync("StudentConnected");
+                    await Clients.Client(room.TeacherConnectionId).SendAsync("StudentConnected");
                 }
             }
         }
-        /// <summary>
-        /// Отправка координат от учителя. Ожидаются нормализованные координаты в диапазоне[0..1].
-        /// Передаём только студенту (если он подключён) чтобы избежать эха.
-        /// Используем float для уменьшения размера пакета (MessagePack поддерживает float).
-        /// </summary>
+
         public Task SendCoords(string token, float nx, float ny)
         {
-            if (_rooms.TryGetByToken(token, out var r)) r.LastActivityUtc =
-            System.DateTime.UtcNow;
-            // Отправляем только студенту — если его нет, ничего не делаем
-            if (_rooms.TryGetByToken(token, out var room) && !
-            string.IsNullOrEmpty(room.StudentConnectionId))
+            if (_rooms.TryGetByToken(token, out var r))
             {
-                return
-                Clients.Client(room.StudentConnectionId).SendAsync("CoordsUpdated", nx, ny);
+                r.LastActivityUtc = System.DateTime.UtcNow;
+                int qx = (int)Math.Clamp(nx * 65535f, 0, 65535);
+                int qy = (int)Math.Clamp(ny * 65535f, 0, 65535);
+                _dispatcher.Push(token, (ushort)qx, (ushort)qy);
             }
             return Task.CompletedTask;
         }
-        /// <summary>
-        /// Периодический heartbeat/keepalive от клиентов — используется для отметки активности комнаты.
-        /// </summary>
+
         public Task Heartbeat()
         {
             _rooms.UpdateActivityByConnection(Context.ConnectionId);
             return Task.CompletedTask;
         }
-        /// <summary>
-        /// Запрашивает удаление комнаты (только учитель может удалить свою комнату).
-        /// После удаления уведомляем студента (при подключении) и очищаем состояние.
-        /// </summary>
+
         public async Task<bool> RemoveRoom(string token)
         {
             if (!_rooms.TryGetByToken(token, out var room)) return false;
-            // проверяем, что текущий connectionId соответствует учителю
-            if (room.TeacherConnectionId != Context.ConnectionId) 
-                return false;
+            if (room.TeacherConnectionId != Context.ConnectionId) return false;
 
-            // уведомляем студента, если он онлайн
             if (!string.IsNullOrEmpty(room.StudentConnectionId))
             {
-                await
-                Clients.Client(room.StudentConnectionId).SendAsync("RoomRemoved");
+                await Clients.Client(room.StudentConnectionId).SendAsync("RoomRemoved");
             }
             _rooms.RemoveByToken(token);
             return true;
         }
-        /// <summary>
-        /// При отключении клиента — находим его комнату, уведомляем пира и очищаем состояние.
-        /// </summary>
+
+        // SignalR forwarding for WebRTC signaling
+        public Task SendOffer(string token, string sdp) => ForwardToPeer(token, "ReceiveOffer", sdp);
+        public Task SendAnswer(string token, string sdp) => ForwardToPeer(token, "ReceiveAnswer", sdp);
+        public Task SendIceCandidate(string token, string candidate) => ForwardToPeer(token, "ReceiveIce", candidate);
+
+        private Task ForwardToPeer(string token, string method, object data)
+        {
+            if (!_rooms.TryGetByToken(token, out var room)) return Task.CompletedTask;
+            var peer = (Context.ConnectionId == room.TeacherConnectionId) ? room.StudentConnectionId : room.TeacherConnectionId;
+            if (string.IsNullOrEmpty(peer)) return Task.CompletedTask;
+            return Clients.Client(peer).SendAsync(method, data);
+        }
+
         public override async Task OnDisconnectedAsync(System.Exception? exception)
         {
-            // Найдём комнату, где connectionId совпадает с учителем или студентом
             var disconnectedConn = Context.ConnectionId;
-            KursorServer.Models.Room? found = null;
-            string? role = null;
-            foreach (var r in _rooms.AllRooms)
+            if (_rooms.TryGetByConnection(disconnectedConn, out var found, out var role))
             {
-                if (r.TeacherConnectionId == disconnectedConn)
-                {
-                    found = r; role = "teacher"; break;
-                }
-                if (r.StudentConnectionId == disconnectedConn)
-                {
-                    found = r; role = "student"; break;
-                }
-            }
-            if (found != null)
-            {
-                // идентифицируем peer (другую сторону) и уведомим её
-                var peerId = role == "teacher" ? found.StudentConnectionId :
-                found.TeacherConnectionId;
+                var peerId = role == "teacher" ? found.StudentConnectionId : found.TeacherConnectionId;
                 if (!string.IsNullOrEmpty(peerId))
                 {
-                    try
-                    {
-                        await
-                        Clients.Client(peerId).SendAsync("PeerDisconnected");
-                    }
-
-                catch { /* Игнорируем ошибки при попытке уведомить отключенного клиента */
-                    }
+                    try { await Clients.Client(peerId).SendAsync("PeerDisconnected"); }
+                    catch { }
                 }
-                // очищаем mappings/комнату
                 _rooms.RemoveByConnection(disconnectedConn);
             }
             await base.OnDisconnectedAsync(exception);

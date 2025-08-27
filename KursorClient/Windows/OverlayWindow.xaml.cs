@@ -8,15 +8,14 @@ namespace KursorClient.Windows
     {
         private double _targetX, _targetY;
         private readonly DispatcherTimer _timer;
-        private const double Lerp = 0.2; // интерполяция
+        private const double Lerp = 0.5; // интерполяция
         public OverlayWindow()
         {
             InitializeComponent();
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             _timer = new DispatcherTimer
             {
-                Interval =
-            TimeSpan.FromMilliseconds(16)
+                Interval = TimeSpan.FromMilliseconds(16)
             };
             _timer.Tick += (s, e) => Tick();
             _timer.Start();

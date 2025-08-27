@@ -5,6 +5,7 @@ using System.Windows;
 using KursorClient.Utils;
 using KursorClient.Services;
 using System.Net.Http.Json;
+
 namespace KursorClient.Windows
 {
     public partial class TeacherSetupWindow : Window

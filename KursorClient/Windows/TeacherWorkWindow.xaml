@@ -5,21 +5,29 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KursorClient.Windows"
         mc:Ignorable="d"
-        Background="{DynamicResource BgBrush}" 
+        Background="Transparent" 
         Foreground="{DynamicResource AccentBrush}"
         Title="Kursor — Teacher"
         Width="760" Height="440"
-        Topmost="True"
+        Topmost="False"
         WindowStartupLocation="CenterScreen"
-        WindowStyle="None"
-        ResizeMode="NoResize"
+        WindowStyle="None" KeyDown="Window_KeyDown"
         AllowsTransparency="True">
-    <Grid Margin="12">
-        <Border CornerRadius="8" Padding="8" Background="#1B1A12">
+    <Grid Margin="3">
+        <Border CornerRadius="12" 
+                Padding="8" 
+                Background="#13131F09"
+                BorderBrush="{DynamicResource AccentBrush}" 
+                BorderThickness="2">
             <Grid>
-                <!-- Canvas с фиксированным соотношением можно реализовать через Viewbox/Uniform grid; упрощено -->
-                <Canvas x:Name="PreviewCanvas" Background="#0F0F0F" MouseMove="PreviewCanvas_MouseMove" MouseLeftButtonDown="PreviewCanvas_MouseLeftButtonDown"/>
-                <Button Content="Завершить" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="OnFinishClick"/>
+                <Canvas x:Name="PreviewCanvas" 
+                        Background="#13131F09" 
+                        MouseMove="PreviewCanvas_MouseMove" 
+                        MouseLeftButtonDown="PreviewCanvas_MouseLeftButtonDown"/>
+                <Button Content="Завершить" 
+                        HorizontalAlignment="Right" 
+                        VerticalAlignment="Bottom" 
+                        Click="OnFinishClick"/>
             </Grid>
         </Border>
     </Grid>

@@ -10,7 +10,7 @@
     <Grid Margin="12">
         <StackPanel>
             <TextBlock FontSize="18" Text="Генерируйте комнату и скопируйте ссылку для ученика" TextWrapping="Wrap"/>
-            <TextBox x:Name="LinkBox" FontSize="16" Margin="0,8,0,8" Height="35" IsReadOnly="True"/>
+            <TextBox x:Name="LinkBox" FontSize="16" Margin="0,8,0,8" Height="35" />
             <StackPanel Orientation="Horizontal">
                 <Button FontSize="16" Content="Создать комнату" Click="CreateRoom_Click"/>
                 <Button FontSize="16" Content="Копировать" Click="Copy_Click"/>
