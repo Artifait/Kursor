@@ -15,7 +15,7 @@ namespace KursorClient.Windows
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             _timer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(16)
+                Interval = TimeSpan.FromMilliseconds(8)
             };
             _timer.Tick += (s, e) => Tick();
             _timer.Start();

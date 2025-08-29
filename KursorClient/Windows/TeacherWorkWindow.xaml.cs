@@ -74,114 +74,112 @@ namespace KursorClient.Windows
         }
         #endregion
 
-        private readonly SignalRService _signalR;
+        private readonly UdpSession _session;
         private readonly string _token;
-        private WebrtcTeacher? _webrtcTeacher;
-
         private double _lastNx = -1, _lastNy = -1;
-        private double _pendingNx = -1, _pendingNy = -1;
-        private readonly Timer _sendTimer;
-        private readonly int _hz = 60;
+        private readonly double _deltaThreshold = 0.002; // настройте при необходимости
+        private readonly int _minIntervalMs = 15;
+        private DateTime _lastSent = DateTime.MinValue;
 
-        public TeacherWorkWindow(SignalRService signalR, string token)
+        public TeacherWorkWindow(UdpSession session, string token)
         {
             InitializeComponent();
-            _signalR = signalR;
+            _session = session;
             _token = token;
-            _sendTimer = new Timer(async _ => await FlushAsync(), null, Timeout.Infinite, Timeout.Infinite);
-            this.Loaded += async (s, e) =>
-            {
-                _sendTimer.Change(0, 1000 / _hz);
-                try
-                {
-                    throw new InvalidOperationException();
-                    _webrtcTeacher = new WebrtcTeacher(_signalR, _token);
-                    await _webrtcTeacher.InitializeAsync();
-                }
-                catch
-                {
-                    _webrtcTeacher = null;
-                }
-            };
-            this.Closed += (s, e) =>
-            {
-                _sendTimer.Dispose();
-                _webrtcTeacher?.Dispose();
-            };
+            // optionally send a JOIN as teacher? For our server we already created room when teacher did CreateRoom
         }
 
         private void PreviewCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            var p = e.GetPosition(PreviewCanvas);
+            var pos = e.GetPosition(PreviewCanvas);
             var w = PreviewCanvas.ActualWidth;
             var h = PreviewCanvas.ActualHeight;
             if (w <= 0 || h <= 0) return;
-            var nx = Math.Clamp(p.X / w, 0.0, 1.0);
-            var ny = Math.Clamp(p.Y / h, 0.0, 1.0);
-            _pendingNx = nx; _pendingNy = ny;
+            var nx = Math.Max(0, Math.Min(1, pos.X / w));
+            var ny = Math.Max(0, Math.Min(1, pos.Y / h));
+
+            var dx = nx - _lastNx;
+            var dy = ny - _lastNy;
+            var dist = Math.Sqrt((dx * dx) + (dy * dy));
+            var now = DateTime.UtcNow;
+            if (_lastNx >= 0 && dist < _deltaThreshold && (now - _lastSent).TotalMilliseconds < _minIntervalMs)
+            {
+                // ignore small/no move
+                return;
+            }
+
+            _lastNx = nx; _lastNy = ny;
+            _lastSent = now;
+
+            // quantize to ushort
+            var ux = (ushort)Math.Round(nx * 65535.0);
+            var uy = (ushort)Math.Round(ny * 65535.0);
+            _ = _session.SendCursorAsync(ux, uy);
         }
 
-        private void PreviewCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => DragMove();
+        private async void OnFinishClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await _session.SendLeaveAsync();
+            }
+            catch { }
+            _session.Dispose();
 
-        private bool _isFullscreen = false;
-        private double _oldWidth = 760, _oldHeight = 440;
+            // Переход в главное меню
+            var main = new MainWindow();
+            main.Show();
+            Close(); // закрыть TeacherWorkWindow
+        }
+
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.F)
             {
-                if (_isFullscreen)
-                {
-                    // Вернуть обычный режим
-                    WindowStyle = WindowStyle.None;
-                    WindowState = WindowState.Normal;
-                    ResizeMode = ResizeMode.CanResize;
-                    Width = _oldWidth;
-                    Height = _oldHeight;
-                    WindowStartupLocation = WindowStartupLocation.CenterScreen;
-                }
-                else
-                {
-                    _oldHeight = Height;
-                    _oldWidth = Width;
-
-                    // Включить фуллскрин
-                    WindowStyle = WindowStyle.None;
-                    WindowState = WindowState.Maximized;
-                    ResizeMode = ResizeMode.NoResize;
-                }
-
-                _isFullscreen = !_isFullscreen;
+                ToggleFullscreen();
             }
         }
 
-        private async Task FlushAsync()
+        private void PreviewCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => DragMove();
+
+        private bool? _isFullscreen = null;
+        private double _oldWidth = 760, _oldHeight = 440;
+        private void ToggleFullscreen()
         {
-            try
+            if (_isFullscreen == null)
             {
-                var nx = _pendingNx; var ny = _pendingNy;
-                if (nx < 0 || ny < 0) return;
-                if (Math.Abs(nx - _lastNx) < 0.001 && Math.Abs(ny - _lastNy) < 0.001)
-                    return;
-
-                _lastNx = nx; _lastNy = ny;
-
-                if (_webrtcTeacher != null && _webrtcTeacher.DataChannelOpen)
+                if(WindowState == WindowState.Maximized && ResizeMode == ResizeMode.NoResize && WindowStyle == WindowStyle.None)
                 {
-                    _webrtcTeacher.SendCoords((float)nx, (float)ny);
+                    _isFullscreen = true;
                 }
                 else
                 {
-                    await _signalR.SendCoordsAsync(_token, (float)nx, (float)ny);
+                    _isFullscreen = false;
                 }
             }
-            catch { }
-        }
 
-        private void OnFinishClick(object sender, RoutedEventArgs e)
-        {
-            var main = new MainWindow();
-            main.Show();
-            this.Close();
+            if ((bool)_isFullscreen)
+            {
+                // Вернуть обычный режим
+                WindowStyle = WindowStyle.None;
+                WindowState = WindowState.Normal;
+                ResizeMode = ResizeMode.CanResize;
+                Width = _oldWidth;
+                Height = _oldHeight;
+                WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            }
+            else
+            {
+                _oldHeight = Height;
+                _oldWidth = Width;
+
+                // Включить фуллскрин
+                WindowStyle = WindowStyle.None;
+                WindowState = WindowState.Maximized;
+                ResizeMode = ResizeMode.NoResize;
+            }
+
+            _isFullscreen = !_isFullscreen;
         }
     }
 }

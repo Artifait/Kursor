@@ -1,5 +1,8 @@
-﻿using System.Windows;
-using KursorClient.Utils;
+﻿// SettingsWindow.xaml.cs
+using KursorClient.Services;
+using System;
+using System.Windows;
+
 namespace KursorClient.Windows
 {
     public partial class SettingsWindow : Window
@@ -7,25 +10,46 @@ namespace KursorClient.Windows
         public SettingsWindow()
         {
             InitializeComponent();
-            ServerUrlBox.Text = ConfigReader.ReadServerUrl();
+
+            // при открытии заполним textbox значением из конфига
+            try
+            {
+                var cur = ConfigService.GetString("server", "");
+                ServerUrlBox.Text = cur;
+            }
+            catch
+            {
+                ServerUrlBox.Text = "";
+            }
         }
+
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            var url = ServerUrlBox.Text?.Trim();
-            if (string.IsNullOrEmpty(url))
+            var txt = ServerUrlBox.Text?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(txt))
             {
-                MessageBox.Show("Введите адрес сервера");
+                MessageBox.Show("Введите server:port");
                 return;
             }
-            ConfigReader.WriteServerUrl(url);
-            MessageBox.Show("Сохранено");
-            this.DialogResult = true;
-            this.Close();
+
+            try
+            {
+                // попытаемся сохранить и распарсить
+                ConfigService.SetServerFromString(txt);
+
+                MessageBox.Show("Сохранено");
+                DialogResult = true;
+                Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Неверный адрес: " + ex.Message);
+            }
         }
+
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            this.DialogResult = false;
-            this.Close();
+            Close();
         }
     }
 }

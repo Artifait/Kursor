@@ -3,7 +3,7 @@ name: Build and Deploy Kursor Server
 on:
   push:
     branches:
-      - master  
+      - master
 
 jobs:
   build-and-push:
@@ -11,6 +11,9 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Set IMAGE name
+        run: echo "IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/kursor-server" >> $GITHUB_ENV
 
       - name: Login to DockerHub
         uses: docker/login-action@v3
@@ -22,9 +25,9 @@ jobs:
         run: |
           cd KursorServer
           VERSION=$(date +%Y.%m.%d.%H%M)
-          docker build . -t artifait/kursor-server:latest -t artifait/kursor-server:$VERSION
-          docker push artifait/kursor-server:latest
-          docker push artifait/kursor-server:$VERSION
+          docker build . -t $IMAGE:latest -t $IMAGE:$VERSION
+          docker push $IMAGE:latest
+          docker push $IMAGE:$VERSION
 
   deploy:
     needs: build-and-push
@@ -37,7 +40,16 @@ jobs:
           username: ${{ secrets.SERVER_SSH_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            docker pull artifait/kursor-server:latest
+            IMAGE=${{ secrets.DOCKERHUB_USERNAME }}/kursor-server
+            docker pull $IMAGE:latest
             docker stop kursor-server || true
             docker rm kursor-server || true
-            docker run -d --name kursor-server --restart=always -p 5254:5254 artifait/kursor-server:latest
+            # Run container: expose HTTP monitor and UDP port. Adjust envs if needed.
+            docker run -d \
+              --name kursor-server \
+              --restart=always \
+              -p 8080:8080 \
+              -p 55555:55555/udp \
+              -e UDP_PORT=55555 \
+              -e MONITOR_PORT=8080 \
+              $IMAGE:latest

@@ -1,68 +1,57 @@
 ﻿using System.Windows;
 using KursorClient.Services;
-using KursorClient.Utils;
 using System;
 
 namespace KursorClient.Windows
 {
     public partial class StudentSetupWindow : Window
     {
-        private SignalRService? _signalR;
+        private UdpSession? _session;
         private OverlayWindow? _overlay;
-        private StudentCenterWindow? _center;
-        private WebrtcStudent? _webrtcStudent;
 
-        public StudentSetupWindow() { InitializeComponent(); }
+        public StudentSetupWindow()
+        {
+            InitializeComponent();
+        }
 
         private async void Connect_Click(object sender, RoutedEventArgs e)
         {
-            var tokenOrLink = TokenBox.Text.Trim();
-            if (string.IsNullOrEmpty(tokenOrLink))
+            var token = TokenBox.Text?.Trim();
+            if (string.IsNullOrEmpty(token))
             {
-                MessageBox.Show("Введите токен или ссылку"); return;
+                MessageBox.Show("Введите токен комнаты");
+                return;
             }
-            var token = tokenOrLink;
-            if (tokenOrLink.Contains('/')) token = tokenOrLink.TrimEnd('/').Split('/')[^1];
-            var server = ConfigReader.ReadServerUrl();
-            _signalR = new SignalRService(server);
-
-            _signalR.CoordsReceived += OnCoords;
-            _signalR.StudentConnected += () => { };
-            _signalR.PeerDisconnected += () => { };
-
-            await _signalR.StartAsync();
-            await _signalR.JoinRoomAsync(token, "student");
-
-            _overlay = new OverlayWindow();
-            _overlay.Show();
-            _center = new StudentCenterWindow(_signalR, token, _overlay);
-            _center.Show();
+            if (ConfigService.ServerEndpoint == null)
+            {
+                MessageBox.Show("Укажите Server URL в настройках");
+                return;
+            }
 
             try
             {
-                throw new NotImplementedException();
-                _webrtcStudent = new WebrtcStudent(_signalR, token, (nx, ny) => _overlay?.SetTargetNormalized(nx, ny));
-                await _webrtcStudent.InitializeAsync();
+                _session?.Dispose();
+                _session = new UdpSession(ConfigService.ServerEndpoint);
+                var ok = await _session.JoinRoomAsync(token);
+                if (!ok)
+                {
+                    MessageBox.Show("Не удалось подключиться к комнате (токен неверен)");
+                    return;
+                }
+
+                var win = new StudentCenterWindow(_session, token);
+                win.Show();
+                Close();
             }
-            catch
+            catch (Exception ex)
             {
-                _webrtcStudent = null;
+                MessageBox.Show("Ошибка: " + ex.Message);
             }
-
-            this.Close();
-        }
-
-        private void OnCoords(double nx, double ny)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-                _overlay?.SetTargetNormalized(nx, ny));
         }
 
         private void Back_Click(object sender, RoutedEventArgs e)
         {
-            var main = new MainWindow();
-            main.Show();
-            this.Close();
+            Close();
         }
     }
 }

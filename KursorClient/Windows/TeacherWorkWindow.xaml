@@ -24,7 +24,7 @@
                         Background="#13131F09" 
                         MouseMove="PreviewCanvas_MouseMove" 
                         MouseLeftButtonDown="PreviewCanvas_MouseLeftButtonDown"/>
-                <Button Content="Завершить" 
+                <Button Content="X" Width="25" Height="25"
                         HorizontalAlignment="Right" 
                         VerticalAlignment="Bottom" 
                         Click="OnFinishClick"/>

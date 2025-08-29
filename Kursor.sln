@@ -5,12 +5,12 @@ VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KursorClient", "KursorClient\KursorClient.csproj", "{9D64F3A9-BF6E-4380-9A6F-807A32D00795}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KursorServer", "KursorServer\KursorServer.csproj", "{2F201062-1258-4127-8917-BCFC7314F8AC}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решения", "Элементы решения", "{82376AE4-008A-4EB5-8589-908605CC98FD}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\deploy.yml = .github\workflows\deploy.yml
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KursorServer", "KursorServer\KursorServer.csproj", "{F2780F05-B702-4AE6-BF3E-B9B947094BED}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,10 +22,10 @@ Global
 		{9D64F3A9-BF6E-4380-9A6F-807A32D00795}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9D64F3A9-BF6E-4380-9A6F-807A32D00795}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9D64F3A9-BF6E-4380-9A6F-807A32D00795}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2F201062-1258-4127-8917-BCFC7314F8AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2F201062-1258-4127-8917-BCFC7314F8AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2F201062-1258-4127-8917-BCFC7314F8AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2F201062-1258-4127-8917-BCFC7314F8AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F2780F05-B702-4AE6-BF3E-B9B947094BED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2780F05-B702-4AE6-BF3E-B9B947094BED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2780F05-B702-4AE6-BF3E-B9B947094BED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2780F05-B702-4AE6-BF3E-B9B947094BED}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
