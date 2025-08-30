@@ -48,7 +48,7 @@ jobs:
             docker run -d \
               --name kursor-server \
               --restart=always \
-              -p 8080:8080 \
+              -p 28080:8080 \
               -p 55555:55555/udp \
               -e UDP_PORT=55555 \
               -e MONITOR_PORT=8080 \

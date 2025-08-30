@@ -234,23 +234,22 @@ class Program
         {
             TcpListener? listener = null;
 
-            // 1) попробуем локальный интерфейс (loopback) — безопаснее (только локальный доступ)
-            listener = TryStart(IPAddress.Loopback, requestedPort);
-            if (listener == null)
-            {
-                // 2) попробуем любой интерфейс (IPAddress.Any)
-                listener = TryStart(IPAddress.Any, requestedPort);
-            }
+            // 1) попробуем любой интерфейс (0.0.0.0) — чтобы docker -p работал
+            listener = TryStart(IPAddress.Any, requestedPort);
 
+            // 2) если не получилось, пробуем loopback
+            if (listener == null)
+                listener = TryStart(IPAddress.Loopback, requestedPort);
+
+            // 3) если и это не получилось — падаём на эпемерный порт на loopback
             if (listener == null)
             {
-                //// 3) попробуем динамический порт (0) на loopback — полезно для локального теста
-                //listener = TryStart(IPAddress.Loopback, 0);
-                //if (listener != null)
-                //{
-                //    var localPort = ((IPEndPoint)listener.LocalEndpoint).Port;
-                //    Console.WriteLine($"[Monitor] original port {requestedPort} busy — started monitor on ephemeral port {localPort} (loopback).");
-                //}
+                listener = TryStart(IPAddress.Loopback, 0);
+                if (listener != null)
+                {
+                    var localPort = ((IPEndPoint)listener.LocalEndpoint).Port;
+                    Console.WriteLine($"[Monitor] original port {requestedPort} busy — started monitor on ephemeral port {localPort} (loopback).");
+                }
             }
             else
             {
